@@ -20,6 +20,12 @@
           value="$(command 'xacro $(find-pkg-share turtlebot3_description)/urdf/turtlebot3_burger.urdf namespace:=turtlebot3_')" />
       </node>
 
+      <!-- Odom -->
+      <node pkg="ros_gz_bridge" exec="parameter_bridge" name="odom_bridge" output="screen"
+            args="/odom@nav_msgs/msg/Odometry@gz.msgs.Odometry" >
+        <remap from="/odom" to="odom"/>
+      </node>
+
       <!-- LaserScan -->
       <node pkg="ros_gz_bridge" exec="parameter_bridge" name="bridge_scan" output="screen"
             args="/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan">
