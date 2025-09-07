@@ -59,6 +59,10 @@ sudo apt-get install -y \
   ros-jazzy-navigation2 \
   ros-jazzy-nav2-bringup \
   ros-jazzy-ros-gz \
+  ros-jazzy-turtlebot3 \
+  ros-jazzy-turtlebot3-simulations \
+  ros-jazzy-rviz-imu-plugin \
+  ros-jazzy-image-pipeline \
   python3-colcon-common-extensions \
   ros-dev-tools \
   git

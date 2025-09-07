@@ -1,0 +1,75 @@
+<launch>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="namespace" default="turtlebot3"/>
+
+  <include file="$(find-pkg-share ros_gz_sim)/launch/gz_sim.launch.py">
+    <arg name="gz_args" value="-r $(find-pkg-share agv_environment)/worlds/turtlebot3_house.sdf"/>
+  </include>
+
+  <timer period="2.0">
+    <node pkg="ros_gz_sim" exec="create" name="turtlebot3_spawn" output="screen"
+          args="-name $(var namespace) -allow_renaming true -x 0.0 -y -1.0 -z 0.1 -Y 1.5708 \
+                -file $(find-pkg-share agv_environment)/models/turtlebot3_burger/model.sdf"/>
+
+    <group>
+      <push-ros-namespace namespace="$(var namespace)"/>
+
+      <node pkg="robot_state_publisher" exec="robot_state_publisher" name="rsp" output="screen">
+        <param name="use_sim_time" value="true"/>
+        <param name="robot_description"
+          value="$(command 'xacro $(find-pkg-share turtlebot3_description)/urdf/turtlebot3_burger.urdf namespace:=turtlebot3_')" />
+      </node>
+
+      <!-- LaserScan -->
+      <node pkg="ros_gz_bridge" exec="parameter_bridge" name="bridge_scan" output="screen"
+            args="/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan">
+        <remap from="/scan" to="scan"/>
+      </node>
+
+      <!-- Lidar -->
+      <node pkg="ros_gz_bridge" exec="parameter_bridge" name="bridge_scan_points" output="screen"
+            args="/scan/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked">
+        <remap from="/scan/points" to="scan/points"/>
+      </node>
+
+      <!-- IMU -->
+      <node pkg="ros_gz_bridge" exec="parameter_bridge" name="bridge_imu" output="screen"
+            args="/imu@sensor_msgs/msg/Imu@gz.msgs.IMU">
+        <remap from="/imu" to="imu"/>
+      </node>
+
+      <!-- Odom -->
+      <node pkg="ros_gz_bridge" exec="parameter_bridge" name="bridge_odom" output="screen"
+            args="/odom@nav_msgs/msg/Odometry@gz.msgs.Odometry">
+        <remap from="/odom" to="odom"/>
+      </node>
+
+      <!-- cmd_vel -->
+      <ros_gz_bridge bridge_name="bridge_cmd_vel">
+        <topic ros_topic_name="/turtlebot3/cmd_vel" gz_topic_name="/cmd_vel"
+          ros_type_name="geometry_msgs/msg/Twist" gz_type_name="gz.msgs.Twist"
+          direction="ROS_TO_GZ" lazy="false"/>
+      </ros_gz_bridge>
+
+      <!-- RGBD Camera -->
+      <node pkg="ros_gz_bridge" exec="parameter_bridge" name="bridge_rgbd" output="screen"
+            args="/turtlebot3/camera/image@sensor_msgs/msg/Image@gz.msgs.Image \
+                  /turtlebot3/camera/depth_image@sensor_msgs/msg/Image@gz.msgs.Image \
+                  /turtlebot3/camera/camera_info@sensor_msgs/msg/CameraInfo@gz.msgs.CameraInfo">
+      </node>
+
+      <node pkg="depth_image_proc" exec="convert_metric_node" name="depth_to_u16" output="screen">
+        <remap from="image_raw" to="/turtlebot3/camera/depth_image"/>
+        <remap from="image" to="/turtlebot3/camera/depth_proc"/>
+        <param name="output_encoding" value="16UC1"/>
+        <param name="queue_size" value="30"/>
+      </node>
+    </group>
+  </timer>
+
+  <!-- RViz -->
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen"
+        args="-d $(find-pkg-share agv_environment)/rviz/nav2_tb3.rviz --ros-args -p namespace:=$(var namespace)">
+    <param name="use_sim_time" value="$(var use_sim_time)"/>
+  </node>
+</launch>
